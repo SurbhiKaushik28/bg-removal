@@ -9,20 +9,13 @@ const clerkWebhooks = async (req, res) => {
 
         const payload = req.body.toString()
 
-        const evt = whook.verify(payload, {
-            "svix-id": req.headers["svix-id"],
-            "svix-timestamp": req.headers["svix-timestamp"],
-            "svix-signature": req.headers["svix-signature"]
-        })
+        whook.verify(payload, {
+    "svix-id": req.headers["svix-id"],
+    "svix-timestamp": req.headers["svix-timestamp"],
+    "svix-signature": req.headers["svix-signature"]
+})
 
-        if (!evt) {
-            return res.status(400).json({
-                success: false,
-                message: "Webhook verification returned no event"
-            })
-        }
-
-        const { data, type } = evt
+const { data, type } = JSON.parse(payload)
 
         switch (type) {
 
