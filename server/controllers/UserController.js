@@ -5,15 +5,22 @@ import userModel from '../models/userModel.js'
 //http://localhost:4000/api/user/webhooks
 const clerkWebhooks = async (req, res) => {
     try {
-        // Create a Svix instance with Clerk webhook secret
         const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET)
 
-        // Verify the original raw webhook body
-        const evt = whook.verify(req.body.toString(), {
+        const payload = req.body.toString()
+
+        const evt = whook.verify(payload, {
             "svix-id": req.headers["svix-id"],
             "svix-timestamp": req.headers["svix-timestamp"],
             "svix-signature": req.headers["svix-signature"]
         })
+
+        if (!evt) {
+            return res.status(400).json({
+                success: false,
+                message: "Webhook verification returned no event"
+            })
+        }
 
         const { data, type } = evt
 
@@ -29,9 +36,8 @@ const clerkWebhooks = async (req, res) => {
                 }
 
                 await userModel.create(userData)
-                res.json({ success: true })
 
-                break
+                return res.json({ success: true })
             }
 
             case "user.updated": {
@@ -47,8 +53,7 @@ const clerkWebhooks = async (req, res) => {
                     userData
                 )
 
-                res.json({ success: true })
-                break
+                return res.json({ success: true })
             }
 
             case "user.deleted": {
@@ -56,19 +61,17 @@ const clerkWebhooks = async (req, res) => {
                     clerkId: data.id
                 })
 
-                res.json({ success: true })
-                break
+                return res.json({ success: true })
             }
 
             default:
-                res.json({ success: true })
-                break
+                return res.json({ success: true })
         }
 
     } catch (error) {
-        console.log(error.message)
+        console.log("Webhook error:", error.message)
 
-        res.status(401).json({
+        return res.status(401).json({
             success: false,
             message: error.message
         })
